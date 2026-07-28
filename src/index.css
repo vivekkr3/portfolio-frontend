@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  /* This ensures the whole page background matches our dark theme */
+  background-color: #0f172a; 
+}
