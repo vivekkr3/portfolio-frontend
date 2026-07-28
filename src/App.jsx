@@ -90,7 +90,7 @@ export default function App() {
 
   const handleDeleteAsset = async (id) => {
     try {
-      await axios.delete(`https://my-portfolio-backend-hydd.onrender.com/api/portfolio${id}`, getAuthHeaders());
+      await axios.delete(`https://my-portfolio-backend-hydd.onrender.com/api/portfolio/${id}`, getAuthHeaders());
       fetchData();
     } catch (error) {
       console.error("Error deleting asset", error);
