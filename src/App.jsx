@@ -24,7 +24,7 @@ export default function App() {
     const endpoint = isLoginMode ? '/api/login' : '/api/register';
     
     try {
-      const response = await axios.post(`http://localhost:5005${endpoint}`, { username, password });
+      const response = await axios.post(`https://my-portfolio-backend-hydd.onrender.com${endpoint}`, { username, password });
       
       if (isLoginMode) {
         localStorage.setItem('token', response.data.token);
@@ -55,8 +55,8 @@ export default function App() {
     try {
       // Fetch both portfolio and history data at the same time
       const [portfolioRes, historyRes] = await Promise.all([
-        axios.get('http://localhost:5005/api/portfolio', getAuthHeaders()),
-        axios.get('http://localhost:5005/api/history', getAuthHeaders())
+        axios.get('https://my-portfolio-backend-hydd.onrender.com/api/portfolio', getAuthHeaders()),
+        axios.get('https://my-portfolio-backend-hydd.onrender.com/api/history', getAuthHeaders())
       ]);
       
       setPortfolio(portfolioRes.data);
@@ -80,7 +80,7 @@ export default function App() {
   const handleAddAsset = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5005/api/portfolio', { name, ticker, shares }, getAuthHeaders());
+      await axios.post('https://my-portfolio-backend-hydd.onrender.com/api/portfolio', { name, ticker, shares }, getAuthHeaders());
       setName(''); setTicker(''); setShares('');
       fetchData(); 
     } catch (error) {
@@ -90,7 +90,7 @@ export default function App() {
 
   const handleDeleteAsset = async (id) => {
     try {
-      await axios.delete(`http://localhost:5005/api/portfolio/${id}`, getAuthHeaders());
+      await axios.delete(`https://my-portfolio-backend-hydd.onrender.com/api/portfolio${id}`, getAuthHeaders());
       fetchData();
     } catch (error) {
       console.error("Error deleting asset", error);
@@ -100,7 +100,7 @@ export default function App() {
   // NEW: Function to save a snapshot
   const handleSaveSnapshot = async () => {
     try {
-      await axios.post('http://localhost:5005/api/history', { totalValue }, getAuthHeaders());
+      await axios.post('https://my-portfolio-backend-hydd.onrender.com/api/history', { totalValue }, getAuthHeaders());
       fetchData(); // Refresh to update the chart!
     } catch (error) {
       console.error("Error saving snapshot", error);
