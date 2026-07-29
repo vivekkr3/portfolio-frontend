@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { PieChart, Pie, Cell, Tooltip as PieTooltip, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as LineTooltip } from 'recharts';
-// NEW: Import the toast functions and the Toaster component
 import toast, { Toaster } from 'react-hot-toast';
+// NEW: Import gorgeous icons
+import { Wallet, TrendingUp, PieChart as PieChartIcon, LogIn, UserPlus, Lock, User, PlusCircle, Trash2, LogOut, Save, LayoutDashboard } from 'lucide-react';
 
 const COLORS = ['#14b8a6', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -20,24 +21,25 @@ export default function App() {
   const [ticker, setTicker] = useState('');
   const [shares, setShares] = useState('');
   
-  // NEW: Loading state to track when data is fetching
   const [isLoading, setIsLoading] = useState(true);
+
+  // NOTE: Replace these with your Render URL if deploying!
+  //const API_URL = 'http://localhost:5005';
+  const API_URL = '[https://my-portfolio-backend-hydd.onrender.com](https://my-portfolio-backend-hydd.onrender.com)';
 
   const handleAuth = async (e) => {
     e.preventDefault();
     setAuthError('');
     const endpoint = isLoginMode ? '/api/login' : '/api/register';
-    
-    // NEW: Show a loading toast while authenticating
-    const toastId = toast.loading(isLoginMode ? 'Logging in...' : 'Creating account...');
+    const toastId = toast.loading(isLoginMode ? 'Authenticating...' : 'Creating account...');
     
     try {
-      const response = await axios.post(`https://my-portfolio-backend-hydd.onrender.com${endpoint}`, { username, password });
+      const response = await axios.post(`${API_URL}${endpoint}`, { username, password });
       
       if (isLoginMode) {
         localStorage.setItem('token', response.data.token);
         setToken(response.data.token);
-        toast.success('Successfully logged in!', { id: toastId });
+        toast.success('Welcome back!', { id: toastId });
       } else {
         setIsLoginMode(true);
         toast.success('Account created! Please log in.', { id: toastId });
@@ -54,7 +56,7 @@ export default function App() {
     setToken(null);
     setPortfolio([]);
     setHistory([]);
-    toast('Logged out', { icon: '👋' });
+    toast('Securely logged out', { icon: '🔒' });
   };
 
   const getAuthHeaders = () => ({
@@ -63,11 +65,11 @@ export default function App() {
 
   const fetchData = async () => {
     if (!token) return;
-    setIsLoading(true); // Turn on loading spinner
+    setIsLoading(true); 
     try {
       const [portfolioRes, historyRes] = await Promise.all([
-        axios.get('https://my-portfolio-backend-hydd.onrender.com/api/portfolio', getAuthHeaders()),
-        axios.get('https://my-portfolio-backend-hydd.onrender.com/api/history', getAuthHeaders())
+        axios.get(`${API_URL}/api/portfolio`, getAuthHeaders()),
+        axios.get(`${API_URL}/api/history`, getAuthHeaders())
       ]);
       
       setPortfolio(portfolioRes.data);
@@ -79,9 +81,9 @@ export default function App() {
       setHistory(formattedHistory);
     } catch (error) {
       if (error.response?.status === 401 || error.response?.status === 403) handleLogout();
-      toast.error('Failed to load data');
+      toast.error('Failed to sync market data');
     } finally {
-      setIsLoading(false); // Turn off loading spinner
+      setIsLoading(false); 
     }
   };
 
@@ -91,9 +93,9 @@ export default function App() {
 
   const handleAddAsset = async (e) => {
     e.preventDefault();
-    const toastId = toast.loading('Buying asset...');
+    const toastId = toast.loading('Executing trade...');
     try {
-      await axios.post('https://my-portfolio-backend-hydd.onrender.com/api/portfolio', { name, ticker, shares }, getAuthHeaders());
+      await axios.post(`${API_URL}/api/portfolio`, { name, ticker, shares }, getAuthHeaders());
       setName(''); setTicker(''); setShares('');
       await fetchData(); 
       toast.success(`${name} added to portfolio!`, { id: toastId });
@@ -103,9 +105,9 @@ export default function App() {
   };
 
   const handleDeleteAsset = async (id, assetName) => {
-    const toastId = toast.loading('Selling asset...');
+    const toastId = toast.loading('Liquidating asset...');
     try {
-      await axios.delete(`https://my-portfolio-backend-hydd.onrender.com/api/portfolio/${id}`, getAuthHeaders());
+      await axios.delete(`${API_URL}/api/portfolio/${id}`, getAuthHeaders());
       await fetchData();
       toast.success(`${assetName} sold successfully`, { id: toastId });
     } catch (error) {
@@ -114,11 +116,11 @@ export default function App() {
   };
 
   const handleSaveSnapshot = async () => {
-    const toastId = toast.loading('Saving snapshot...');
+    const toastId = toast.loading('Recording net worth...');
     try {
-      await axios.post('https://my-portfolio-backend-hydd.onrender.com/api/history', { totalValue }, getAuthHeaders());
+      await axios.post(`${API_URL}/api/history`, { totalValue }, getAuthHeaders());
       await fetchData(); 
-      toast.success('Snapshot saved!', { id: toastId });
+      toast.success('Snapshot locked in!', { id: toastId });
     } catch (error) {
       toast.error('Failed to save snapshot', { id: toastId });
     }
@@ -130,24 +132,50 @@ export default function App() {
 
   if (!token) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans">
-        {/* NEW: Add Toaster to login screen */}
+      <div className="relative min-h-screen bg-slate-950 flex items-center justify-center p-4 font-sans overflow-hidden">
         <Toaster position="top-center" toastOptions={{ style: { background: '#1e293b', color: '#fff' } }} />
-        <div className="bg-slate-800 p-8 rounded-2xl shadow-2xl border border-slate-700/50 w-full max-w-md">
-          <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500 mb-6 text-center">
-            {isLoginMode ? 'Welcome Back' : 'Create Account'}
+        
+        {/* Ambient Background Glows */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] rounded-full bg-teal-500/10 blur-[120px]"></div>
+          <div className="absolute top-[60%] -right-[10%] w-[60%] h-[60%] rounded-full bg-blue-600/10 blur-[100px]"></div>
+        </div>
+
+        {/* Glassmorphism Login Card */}
+        <div className="relative z-10 bg-slate-900/60 backdrop-blur-2xl p-10 rounded-3xl shadow-[0_0_40px_rgba(0,0,0,0.5)] border border-slate-700/50 w-full max-w-md transition-all">
+          
+          <div className="w-20 h-20 bg-gradient-to-br from-teal-400 to-blue-600 rounded-2xl mx-auto flex items-center justify-center mb-6 shadow-lg shadow-teal-500/20">
+            <Wallet className="w-10 h-10 text-white" />
+          </div>
+
+          <h2 className="text-3xl font-extrabold text-white mb-2 text-center tracking-tight">
+            {isLoginMode ? 'Welcome back' : 'Create an account'}
           </h2>
-          {authError && <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-3 rounded-lg mb-4 text-sm text-center">{authError}</div>}
-          <form onSubmit={handleAuth} className="space-y-4">
-            <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all" />
-            <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all" />
-            <button type="submit" className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-400 hover:to-blue-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all active:scale-95">
-              {isLoginMode ? 'Sign In' : 'Sign Up'}
+          <p className="text-slate-400 text-center mb-8 text-sm">
+            {isLoginMode ? 'Enter your details to access your portfolio.' : 'Start tracking your net worth today.'}
+          </p>
+
+          {authError && <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-3 rounded-xl mb-6 text-sm text-center flex items-center justify-center gap-2"><Lock className="w-4 h-4"/> {authError}</div>}
+          
+          <form onSubmit={handleAuth} className="space-y-5">
+            <div className="relative">
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+              <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required 
+                className="w-full bg-slate-950/50 border border-slate-700/50 rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all" />
+            </div>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+              <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required 
+                className="w-full bg-slate-950/50 border border-slate-700/50 rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all" />
+            </div>
+            <button type="submit" className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-400 hover:to-blue-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg hover:shadow-teal-500/25 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+              {isLoginMode ? <><LogIn className="w-5 h-5"/> Sign In</> : <><UserPlus className="w-5 h-5"/> Sign Up</>}
             </button>
           </form>
-          <p className="mt-6 text-center text-slate-400 text-sm">
+          
+          <p className="mt-8 text-center text-slate-400 text-sm">
             {isLoginMode ? "Don't have an account? " : "Already have an account? "}
-            <button onClick={() => setIsLoginMode(!isLoginMode)} className="text-teal-400 hover:text-teal-300 font-semibold transition-colors">
+            <button onClick={() => setIsLoginMode(!isLoginMode)} className="text-teal-400 hover:text-teal-300 font-semibold transition-colors underline-offset-4 hover:underline">
               {isLoginMode ? 'Sign up' : 'Log in'}
             </button>
           </p>
@@ -156,69 +184,95 @@ export default function App() {
     );
   }
 
-  // NEW: Loading Screen
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4 font-sans text-white">
-        {/* Animated Tailwind Spinner */}
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-teal-500 mb-4"></div>
-        <h2 className="text-xl font-semibold text-slate-300 animate-pulse">Syncing with Market Data...</h2>
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 font-sans text-white">
+        <div className="relative w-20 h-20 mb-6">
+          <div className="absolute inset-0 rounded-full border-t-2 border-teal-500 animate-spin"></div>
+          <div className="absolute inset-2 rounded-full border-r-2 border-blue-500 animate-spin flex items-center justify-center">
+            <Wallet className="w-6 h-6 text-teal-400" />
+          </div>
+        </div>
+        <h2 className="text-xl font-semibold text-slate-300 animate-pulse tracking-wide">Syncing Market Data...</h2>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 p-8 font-sans selection:bg-teal-500 selection:text-white">
-      {/* NEW: Add Toaster to main dashboard */}
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans selection:bg-teal-500/30 selection:text-teal-200">
       <Toaster position="bottom-right" toastOptions={{ style: { background: '#1e293b', color: '#fff', border: '1px solid #334155' } }} />
       
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto space-y-8">
         
-        <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500 mb-2">
-              Portfolio Tracker
-            </h1>
-            <h2 className="text-2xl text-slate-400 font-light">
-              Total Net Worth: <span className="text-white font-semibold">₹{totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </h2>
+        {/* Navbar / Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-slate-900/50 p-6 rounded-3xl border border-slate-800 backdrop-blur-xl">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-gradient-to-br from-teal-400 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-teal-500/20">
+              <LayoutDashboard className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-sm font-semibold text-teal-500 uppercase tracking-wider mb-1">Live Dashboard</h1>
+              <h2 className="text-3xl md:text-4xl font-light text-slate-400">
+                Net Worth: <span className="text-white font-bold tracking-tight">₹{totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </h2>
+            </div>
           </div>
-          <div className="flex gap-4">
-            <button onClick={handleSaveSnapshot} className="bg-teal-500/20 hover:bg-teal-500/30 text-teal-400 px-6 py-2 rounded-lg border border-teal-500/50 transition-all font-medium">
-              Save Snapshot
+          <div className="flex w-full md:w-auto gap-3">
+            <button onClick={handleSaveSnapshot} className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 px-5 py-2.5 rounded-xl border border-teal-500/30 transition-all font-medium">
+              <Save className="w-4 h-4" /> Snapshot
             </button>
-            <button onClick={handleLogout} className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-6 py-2 rounded-lg border border-slate-700 transition-all font-medium">
-              Sign Out
+            <button onClick={handleLogout} className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 px-5 py-2.5 rounded-xl border border-slate-700 transition-all font-medium">
+              <LogOut className="w-4 h-4" /> Exit
             </button>
           </div>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <div className="space-y-8">
-            <div className="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700/50">
-              <h3 className="text-xl font-bold mb-4 text-teal-400">Add New Investment</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* Left Column (Forms & List) */}
+          <div className="lg:col-span-5 space-y-8">
+            <div className="bg-slate-900/50 p-7 rounded-3xl border border-slate-800 hover:border-slate-700 transition-colors backdrop-blur-xl shadow-xl">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400"><PlusCircle className="w-5 h-5"/></div>
+                <h3 className="text-xl font-semibold text-white">Acquire Asset</h3>
+              </div>
               <form onSubmit={handleAddAsset} className="space-y-4">
-                <div><input type="text" placeholder="Asset Name (e.g., Reliance)" value={name} onChange={(e) => setName(e.target.value)} required className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all" /></div>
-                <div><input type="text" placeholder="Ticker Symbol (e.g., RELIANCE.NS)" value={ticker} onChange={(e) => setTicker(e.target.value)} required className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all" /></div>
-                <div><input type="number" step="any" placeholder="Number of Shares (e.g., 10)" value={shares} onChange={(e) => setShares(e.target.value)} required className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all" /></div>
-                <button type="submit" className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-400 hover:to-blue-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:shadow-teal-500/25 transition-all active:scale-95">Buy Asset</button>
+                <input type="text" placeholder="Asset Name (e.g., Reliance)" value={name} onChange={(e) => setName(e.target.value)} required className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all" />
+                <div className="flex gap-4">
+                  <input type="text" placeholder="Ticker (RELIANCE.NS)" value={ticker} onChange={(e) => setTicker(e.target.value)} required className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all uppercase" />
+                  <input type="number" step="any" placeholder="Qty" value={shares} onChange={(e) => setShares(e.target.value)} required className="w-32 bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all" />
+                </div>
+                <button type="submit" className="w-full bg-slate-800 hover:bg-slate-700 text-white font-medium py-3.5 px-4 rounded-xl border border-slate-700 hover:border-slate-600 transition-all active:scale-[0.98] mt-2">
+                  Execute Trade
+                </button>
               </form>
             </div>
 
-            <div className="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700/50">
-              <h3 className="text-xl font-bold mb-4 text-slate-300">Your Holdings</h3>
+            <div className="bg-slate-900/50 p-7 rounded-3xl border border-slate-800 hover:border-slate-700 transition-colors backdrop-blur-xl shadow-xl">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-teal-500/10 rounded-lg text-teal-400"><Wallet className="w-5 h-5"/></div>
+                <h3 className="text-xl font-semibold text-white">Current Holdings</h3>
+              </div>
+              
               {portfolio.length === 0 ? (
-                <p className="text-slate-500 italic">No assets in portfolio.</p>
+                <div className="text-center py-10 text-slate-500 border border-dashed border-slate-700 rounded-2xl">
+                  No open positions.
+                </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                   {portfolio.map((asset) => (
-                    <div key={asset.id} className="flex justify-between items-center bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 hover:border-slate-600 transition-colors">
+                    <div key={asset.id} className="group flex justify-between items-center bg-slate-950/50 p-4 rounded-2xl border border-slate-800/50 hover:border-teal-500/30 hover:bg-slate-800/50 transition-all duration-300">
                       <div>
-                        <strong className="text-lg text-white">{asset.name} <span className="text-sm font-normal text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full ml-1">{asset.ticker}</span></strong>
+                        <div className="flex items-center gap-2">
+                          <strong className="text-lg font-semibold text-white">{asset.name}</strong>
+                          <span className="text-xs font-medium text-slate-400 bg-slate-800 px-2 py-1 rounded-md">{asset.ticker}</span>
+                        </div>
                         <div className="text-sm text-slate-400 mt-1">{asset.shares} shares @ {asset.originalCurrency} {asset.originalPrice?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || 'N/A'}</div>
-                        <div className="text-teal-400 font-semibold mt-1">Value: ₹{(asset.value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                        <div className="text-teal-400 font-semibold mt-1">₹{(asset.value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                       </div>
-                      <button onClick={() => handleDeleteAsset(asset.id, asset.name)} className="bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white px-3 py-2 rounded-lg transition-all text-sm font-medium border border-red-500/20 hover:border-red-500">Delete</button>
+                      <button onClick={() => handleDeleteAsset(asset.id, asset.name)} className="opacity-0 group-hover:opacity-100 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white p-3 rounded-xl transition-all border border-red-500/20 hover:border-red-500" title="Sell Asset">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -226,50 +280,69 @@ export default function App() {
             </div>
           </div>
 
-          <div className="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700/50 flex flex-col min-h-[500px]">
-            <h3 className="text-xl font-bold mb-6 text-slate-300">Asset Allocation</h3>
-            <div className="flex-grow flex items-center justify-center">
-              {portfolio.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={portfolio} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={80} outerRadius={140} paddingAngle={5} stroke="none">
-                      {portfolio.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                    </Pie>
-                    <PieTooltip formatter={(value) => `₹${value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`} contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '0.5rem', color: '#f8fafc' }} itemStyle={{ color: '#f8fafc' }} />
-                    <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="text-slate-500 italic flex flex-col items-center">
-                  Add assets to see your allocation
-                </div>
-              )}
+          {/* Right Column (Charts) */}
+          <div className="lg:col-span-7 flex flex-col gap-8">
+            <div className="bg-slate-900/50 p-7 rounded-3xl border border-slate-800 hover:border-slate-700 transition-colors backdrop-blur-xl shadow-xl flex flex-col h-[400px]">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-amber-500/10 rounded-lg text-amber-400"><PieChartIcon className="w-5 h-5"/></div>
+                <h3 className="text-xl font-semibold text-white">Asset Allocation</h3>
+              </div>
+              <div className="flex-grow flex items-center justify-center">
+                {portfolio.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={portfolio} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={80} outerRadius={130} paddingAngle={5} stroke="none">
+                        {portfolio.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                      </Pie>
+                      <PieTooltip formatter={(value) => `₹${value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`} contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '1rem', color: '#f8fafc', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)' }} itemStyle={{ color: '#f8fafc', fontWeight: 'bold' }} />
+                      <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-slate-500 text-sm flex flex-col items-center justify-center h-full w-full border border-dashed border-slate-700 rounded-2xl">
+                    <PieChartIcon className="w-8 h-8 mb-2 opacity-50"/>
+                    Awaiting data
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-slate-900/50 p-7 rounded-3xl border border-slate-800 hover:border-slate-700 transition-colors backdrop-blur-xl shadow-xl flex flex-col flex-grow min-h-[400px]">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400"><TrendingUp className="w-5 h-5"/></div>
+                <h3 className="text-xl font-semibold text-white">Performance History</h3>
+              </div>
+              <div className="flex-grow">
+                {history.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={history} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                      <XAxis dataKey="displayDate" stroke="#64748b" tick={{fontSize: 12}} tickLine={false} axisLine={false} dy={10} />
+                      <YAxis stroke="#64748b" tickFormatter={(val) => `₹${(val/1000).toFixed(0)}k`} tick={{fontSize: 12}} tickLine={false} axisLine={false} dx={-10} />
+                      <LineTooltip formatter={(value) => [`₹${value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, 'Net Worth']} labelStyle={{ color: '#94a3b8', marginBottom: '4px' }} contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '1rem', color: '#f8fafc', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)' }} />
+                      <Line type="monotone" dataKey="value" stroke="#14b8a6" strokeWidth={4} dot={{ r: 4, fill: '#0f172a', strokeWidth: 2 }} activeDot={{ r: 8, fill: '#14b8a6', stroke: '#fff', strokeWidth: 2 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-slate-500 text-sm flex flex-col items-center justify-center h-full w-full border border-dashed border-slate-700 rounded-2xl">
+                    <TrendingUp className="w-8 h-8 mb-2 opacity-50"/>
+                    Click "Snapshot" to begin tracking
+                  </div>
+                )}
+              </div>
             </div>
           </div>
+          
         </div>
-
-        <div className="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700/50 w-full min-h-[400px] flex flex-col">
-          <h3 className="text-xl font-bold mb-6 text-slate-300">Net Worth Trend</h3>
-          <div className="flex-grow">
-            {history.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={history} margin={{ top: 10, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="displayDate" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" tickFormatter={(val) => `₹${(val/1000).toFixed(0)}k`} />
-                  <LineTooltip formatter={(value) => [`₹${value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, 'Net Worth']} labelStyle={{ color: '#94a3b8' }} contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '0.5rem', color: '#f8fafc' }} />
-                  <Line type="monotone" dataKey="value" stroke="#14b8a6" strokeWidth={3} activeDot={{ r: 8 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="text-slate-500 italic flex h-full items-center justify-center">
-                Click "Save Snapshot" at the top to record your first data point!
-              </div>
-            )}
-          </div>
-        </div>
-
       </div>
+      
+      {/* Custom Scrollbar styling injected globally for the list */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+      `}} />
     </div>
   );
 }
