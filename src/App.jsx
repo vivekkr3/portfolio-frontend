@@ -24,8 +24,8 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Clean API URL without any markdown brackets! 
-  // Change to 'http://localhost:5005' if you want to test locally on your PC.
-  const API_URL = 'https://my-portfolio-backend-hydd.onrender.com';
+   const API_URL ='http://localhost:5005' ;
+  //const API_URL = 'https://my-portfolio-backend-hydd.onrender.com';
 
   const handleAuth = async (e) => {
     e.preventDefault();
