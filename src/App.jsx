@@ -25,7 +25,7 @@ export default function App() {
 
   // NOTE: Replace these with your Render URL if deploying!
   //const API_URL = 'http://localhost:5005';
-  const API_URL = '[https://my-portfolio-backend-hydd.onrender.com](https://my-portfolio-backend-hydd.onrender.com)';
+  const API_URL = 'https://my-portfolio-backend-hydd.onrender.com';
 
   const handleAuth = async (e) => {
     e.preventDefault();
