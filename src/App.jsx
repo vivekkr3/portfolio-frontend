@@ -24,8 +24,8 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Clean API URL without any markdown brackets! 
-   const API_URL ='http://localhost:5005' ;
-  //const API_URL = 'https://my-portfolio-backend-hydd.onrender.com';
+  //const API_URL ='http://localhost:5005' ;
+  const API_URL = 'https://my-portfolio-backend-hydd.onrender.com';
 
   const handleAuth = async (e) => {
     e.preventDefault();
