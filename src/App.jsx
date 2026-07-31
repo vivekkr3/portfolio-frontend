@@ -101,8 +101,11 @@ export default function App() {
           
           let priceInINR = currency === 'USD' ? livePrice * usdToInrRate : livePrice;
           
+          // NEW: Convert the buy price to INR if the stock trades in USD!
+          let buyPriceInINR = currency === 'USD' ? (asset.buyPrice || 0) * usdToInrRate : (asset.buyPrice || 0);
+          
           const currentValue = priceInINR * asset.shares;
-          const totalInvested = (asset.buyPrice || 0) * asset.shares;
+          const totalInvested = buyPriceInINR * asset.shares;
           const pnl = currentValue - totalInvested;
           const pnlPercent = totalInvested > 0 ? (pnl / totalInvested) * 100 : 0;
 
@@ -307,7 +310,7 @@ export default function App() {
                 <input type="text" placeholder="Ticker (RELIANCE.NS)" value={ticker} onChange={(e) => setTicker(e.target.value)} required className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all uppercase" />
                 <div className="flex gap-4">
                   <input type="number" step="any" placeholder="Qty" value={shares} onChange={(e) => setShares(e.target.value)} required className="w-1/2 bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all" />
-                  <input type="number" step="any" placeholder="Avg Buy (₹)" value={buyPrice} onChange={(e) => setBuyPrice(e.target.value)} required className="w-1/2 bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all" />
+                  <input type="number" step="any" placeholder="Avg Buy (Native Currency)" value={buyPrice} onChange={(e) => setBuyPrice(e.target.value)} required className="w-1/2 bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all" />
                 </div>
                 <button type="submit" className="w-full bg-slate-800 hover:bg-slate-700 text-white font-medium py-3.5 px-4 rounded-xl border border-slate-700 hover:border-slate-600 transition-all active:scale-[0.98] mt-2">
                   Execute Trade
