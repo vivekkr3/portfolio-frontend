@@ -19,12 +19,11 @@ export default function App() {
   const [name, setName] = useState('');
   const [ticker, setTicker] = useState('');
   const [shares, setShares] = useState('');
-  const [buyPrice, setBuyPrice] = useState(''); // NEW P&L STATE
+  const [buyPrice, setBuyPrice] = useState('');
   
   const [isLoading, setIsLoading] = useState(true);
 
-  // Clean API URL without any markdown brackets! 
-  //const API_URL ='http://localhost:5005' ;
+  // Using the Render production URL. Ensure there are no brackets here!
   const API_URL = 'https://my-portfolio-backend-hydd.onrender.com';
 
   const handleAuth = async (e) => {
@@ -72,10 +71,75 @@ export default function App() {
         axios.get(`${API_URL}/api/history`, getAuthHeaders())
       ]);
       
-      // Bulletproof array fallbacks to prevent the White Screen of Death
-      setPortfolio(Array.isArray(portfolioRes.data) ? portfolioRes.data : []);
-      
+      // Fallback in case the backend sends an HTML error page or empty response
+      const rawAssets = Array.isArray(portfolioRes.data) ? portfolioRes.data : [];
       const rawHistory = Array.isArray(historyRes.data) ? historyRes.data : [];
+
+      // 1. Fetch USD to INR using a public CORS proxy
+      let usdToInrRate = 83.50;
+      try {
+        const fxUrl = encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/USDINR=X');
+        const fxRes = await axios.get(`https://api.allorigins.win/raw?url=${fxUrl}`);
+        if (fxRes.data?.chart?.result?.[0]?.meta?.regularMarketPrice) {
+          usdToInrRate = fxRes.data.chart.result[0].meta.regularMarketPrice;
+        }
+      } catch (e) {
+        console.warn("FX fetch failed, using fallback 83.50");
+      }
+
+      // 2. Fetch prices SEQUENTIALLY to prevent rate-limiting the proxy
+      const populatedAssets = [];
+      
+      for (const asset of rawAssets) {
+        try {
+          const assetUrl = encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${asset.ticker}`);
+          const res = await axios.get(`https://api.allorigins.win/raw?url=${assetUrl}`);
+          
+          const meta = res.data.chart.result[0].meta;
+          const livePrice = meta.regularMarketPrice;
+          const currency = meta.currency || 'INR';
+          
+          let priceInINR = currency === 'USD' ? livePrice * usdToInrRate : livePrice;
+          
+          const currentValue = priceInINR * asset.shares;
+          const totalInvested = (asset.buyPrice || 0) * asset.shares;
+          const pnl = currentValue - totalInvested;
+          const pnlPercent = totalInvested > 0 ? (pnl / totalInvested) * 100 : 0;
+
+          populatedAssets.push({
+            ...asset,
+            originalCurrency: currency,
+            originalPrice: livePrice,
+            value: currentValue,
+            totalInvested,      
+            pnl,                
+            pnlPercent          
+          });
+        } catch (err) {
+          console.error(`Browser block on ${asset.ticker}. Using mock data.`);
+          const mockPriceINR = 2500 + (Math.random() * 500); 
+          const currentValue = mockPriceINR * asset.shares;
+          const totalInvested = (asset.buyPrice || 0) * asset.shares;
+          const pnl = currentValue - totalInvested;
+          const pnlPercent = totalInvested > 0 ? (pnl / totalInvested) * 100 : 0;
+
+          populatedAssets.push({ 
+            ...asset, 
+            originalCurrency: 'INR (Mocked)', 
+            originalPrice: mockPriceINR, 
+            value: currentValue,
+            totalInvested,
+            pnl,
+            pnlPercent
+          });
+        }
+        
+        // Polite delay of 500ms before fetching the next ticker
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      setPortfolio(populatedAssets);
+      
       const formattedHistory = rawHistory.map(snap => ({
         ...snap,
         displayDate: new Date(snap.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
@@ -97,7 +161,6 @@ export default function App() {
     e.preventDefault();
     const toastId = toast.loading('Executing trade...');
     try {
-      // NEW: include buyPrice in the payload
       await axios.post(`${API_URL}/api/portfolio`, { name, ticker, shares, buyPrice }, getAuthHeaders());
       setName(''); setTicker(''); setShares(''); setBuyPrice('');
       await fetchData(); 
@@ -130,6 +193,8 @@ export default function App() {
   };
 
   const totalValue = portfolio.reduce((sum, asset) => sum + (asset.value || 0), 0);
+
+  // --- UI RENDERING ---
 
   if (!token) {
     return (
@@ -230,6 +295,7 @@ export default function App() {
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
+          {/* Left Column (Forms & List) */}
           <div className="lg:col-span-5 space-y-8">
             <div className="bg-slate-900/50 p-7 rounded-3xl border border-slate-800 hover:border-slate-700 transition-colors backdrop-blur-xl shadow-xl">
               <div className="flex items-center gap-3 mb-6">
@@ -239,13 +305,10 @@ export default function App() {
               <form onSubmit={handleAddAsset} className="space-y-4">
                 <input type="text" placeholder="Asset Name (e.g., Reliance)" value={name} onChange={(e) => setName(e.target.value)} required className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all" />
                 <input type="text" placeholder="Ticker (RELIANCE.NS)" value={ticker} onChange={(e) => setTicker(e.target.value)} required className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all uppercase" />
-                
-                {/* NEW: Qty & Buy Price inputs side-by-side */}
                 <div className="flex gap-4">
                   <input type="number" step="any" placeholder="Qty" value={shares} onChange={(e) => setShares(e.target.value)} required className="w-1/2 bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all" />
                   <input type="number" step="any" placeholder="Avg Buy (₹)" value={buyPrice} onChange={(e) => setBuyPrice(e.target.value)} required className="w-1/2 bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all" />
                 </div>
-
                 <button type="submit" className="w-full bg-slate-800 hover:bg-slate-700 text-white font-medium py-3.5 px-4 rounded-xl border border-slate-700 hover:border-slate-600 transition-all active:scale-[0.98] mt-2">
                   Execute Trade
                 </button>
@@ -274,13 +337,12 @@ export default function App() {
                         <div className="text-sm text-slate-400 mt-1">{asset.shares} shares @ {asset.originalCurrency} {asset.originalPrice?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || 'N/A'}</div>
                       </div>
                       
-                      {/* NEW: Dynamic P&L Badge */}
-                      <div className="flex items-center gap-4">
+                      <div className="text-right flex items-center gap-3">
                         <div className="text-right">
                           <div className="text-teal-400 font-bold text-lg">₹{(asset.value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                          {asset.buyPrice > 0 && (
+                          {(asset.buyPrice || 0) > 0 && (
                             <div className={`text-xs font-semibold px-2 py-1 rounded-md mt-1 inline-block border ${asset.pnl >= 0 ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-                              {asset.pnl >= 0 ? '+' : ''}₹{(asset.pnl || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })} ({asset.pnl >= 0 ? '+' : ''}{(asset.pnlPercent || 0).toFixed(2)}%)
+                              {asset.pnl >= 0 ? '+' : ''}₹{asset.pnl.toLocaleString('en-IN', { maximumFractionDigits: 2 })} ({asset.pnl >= 0 ? '+' : ''}{asset.pnlPercent.toFixed(2)}%)
                             </div>
                           )}
                         </div>
@@ -288,7 +350,6 @@ export default function App() {
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
-
                     </div>
                   ))}
                 </div>
@@ -296,6 +357,7 @@ export default function App() {
             </div>
           </div>
 
+          {/* Right Column (Charts) */}
           <div className="lg:col-span-7 flex flex-col gap-8">
             <div className="bg-slate-900/50 p-7 rounded-3xl border border-slate-800 hover:border-slate-700 transition-colors backdrop-blur-xl shadow-xl flex flex-col h-[400px]">
               <div className="flex items-center gap-3 mb-6">
