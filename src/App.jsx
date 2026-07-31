@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { PieChart, Pie, Cell, Tooltip as PieTooltip, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as LineTooltip } from 'recharts';
 import toast, { Toaster } from 'react-hot-toast';
-import { Wallet, TrendingUp, PieChart as PieChartIcon, LogIn, UserPlus, Lock, User, PlusCircle, Trash2, LogOut, Save, LayoutDashboard } from 'lucide-react';
+import { Wallet, TrendingUp, PieChart as PieChartIcon, LogIn, UserPlus, Lock, User, PlusCircle, Trash2, LogOut, Save, LayoutDashboard, ShieldCheck, BarChart3, Quote } from 'lucide-react';
 
 const COLORS = ['#14b8a6', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -133,7 +133,7 @@ export default function App() {
 
   if (!token) {
     return (
-      <div className="relative min-h-screen bg-slate-950 flex items-center justify-center p-4 font-sans overflow-hidden">
+      <div className="relative min-h-screen bg-slate-950 flex items-center justify-center p-4 md:p-8 font-sans overflow-hidden">
         <Toaster position="top-center" toastOptions={{ style: { background: '#1e293b', color: '#fff' } }} />
         
         {/* Ambient Background Glows */}
@@ -142,42 +142,97 @@ export default function App() {
           <div className="absolute top-[60%] -right-[10%] w-[60%] h-[60%] rounded-full bg-blue-600/10 blur-[100px]"></div>
         </div>
 
-        <div className="relative z-10 bg-slate-900/60 backdrop-blur-2xl p-10 rounded-3xl shadow-[0_0_40px_rgba(0,0,0,0.5)] border border-slate-700/50 w-full max-w-md transition-all">
-          <div className="w-20 h-20 bg-gradient-to-br from-teal-400 to-blue-600 rounded-2xl mx-auto flex items-center justify-center mb-6 shadow-lg shadow-teal-500/20">
-            <Wallet className="w-10 h-10 text-white" />
+        {/* Wide Split-Screen Glass Card */}
+        <div className="relative z-10 w-full max-w-5xl flex flex-col md:flex-row bg-slate-900/60 backdrop-blur-2xl rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-slate-700/50 overflow-hidden">
+          
+          {/* Left Side: The Banner */}
+          <div className="w-full md:w-5/12 bg-gradient-to-br from-slate-800 to-slate-900 p-8 md:p-12 flex flex-col justify-between relative border-b md:border-b-0 md:border-r border-slate-700/50 overflow-hidden">
+            {/* Banner Background Overlay */}
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 pointer-events-none"></div>
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-teal-500/20 rounded-full blur-[80px]"></div>
+            
+            <div className="relative z-10">
+              <div className="w-16 h-16 bg-gradient-to-br from-teal-400 to-blue-600 rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-teal-500/20">
+                <Wallet className="w-8 h-8 text-white" />
+              </div>
+              
+              <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-4 tracking-tight leading-tight">
+                Command your <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500">financial empire.</span>
+              </h1>
+              
+              <p className="text-slate-300 text-sm md:text-base leading-relaxed mb-10">
+                Join elite investors tracking their global assets, analyzing real-time market trends, and building generational wealth.
+              </p>
+
+              <div className="space-y-5 hidden md:block">
+                <div className="flex items-center gap-4">
+                  <div className="p-2.5 bg-teal-500/10 border border-teal-500/20 rounded-xl"><BarChart3 className="text-teal-400 w-5 h-5"/></div>
+                  <span className="text-slate-200 text-sm font-medium tracking-wide">Live P&L Analytics</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="p-2.5 bg-blue-500/10 border border-blue-500/20 rounded-xl"><TrendingUp className="text-blue-400 w-5 h-5"/></div>
+                  <span className="text-slate-200 text-sm font-medium tracking-wide">Historical Net Worth</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="p-2.5 bg-purple-500/10 border border-purple-500/20 rounded-xl"><ShieldCheck className="text-purple-400 w-5 h-5"/></div>
+                  <span className="text-slate-200 text-sm font-medium tracking-wide">Bank-Grade Encryption</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative z-10 mt-10 md:mt-0 pt-8 border-t border-slate-700/50">
+              <Quote className="w-6 h-6 text-slate-500 mb-3 opacity-50" />
+              <p className="text-xs md:text-sm text-slate-400 italic font-light">
+                "The best time to plant a tree was 20 years ago. The second best time is today."
+              </p>
+            </div>
           </div>
 
-          <h2 className="text-3xl font-extrabold text-white mb-2 text-center tracking-tight">
-            {isLoginMode ? 'Welcome back' : 'Create an account'}
-          </h2>
-          <p className="text-slate-400 text-center mb-8 text-sm">
-            {isLoginMode ? 'Enter your details to access your portfolio.' : 'Start tracking your net worth today.'}
-          </p>
+          {/* Right Side: The Form */}
+          <div className="w-full md:w-7/12 p-8 md:p-14 flex flex-col justify-center bg-slate-950/40 relative">
+            
+            <div className="max-w-md w-full mx-auto">
+              <div className="mb-10 text-center md:text-left">
+                <h2 className="text-3xl font-extrabold text-white mb-2 tracking-tight">
+                  {isLoginMode ? 'Welcome back' : 'Create an account'}
+                </h2>
+                <p className="text-slate-400 text-sm">
+                  {isLoginMode ? 'Enter your credentials to access your dashboard.' : 'Start your journey to financial freedom today.'}
+                </p>
+              </div>
 
-          {authError && <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-3 rounded-xl mb-6 text-sm text-center flex items-center justify-center gap-2"><Lock className="w-4 h-4"/> {authError}</div>}
-          
-          <form onSubmit={handleAuth} className="space-y-5">
-            <div className="relative">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-              <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required 
-                className="w-full bg-slate-950/50 border border-slate-700/50 rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all" />
+              {authError && <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-3.5 rounded-xl mb-6 text-sm flex items-center gap-3"><ShieldCheck className="w-5 h-5"/> {authError}</div>}
+              
+              <form onSubmit={handleAuth} className="space-y-5">
+                <div className="space-y-4">
+                  <div className="relative group">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-teal-400 transition-colors" />
+                    <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required 
+                      className="w-full bg-slate-900/80 border border-slate-700/50 rounded-xl pl-12 pr-4 py-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all" />
+                  </div>
+                  <div className="relative group">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-teal-400 transition-colors" />
+                    <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required 
+                      className="w-full bg-slate-900/80 border border-slate-700/50 rounded-xl pl-12 pr-4 py-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all" />
+                  </div>
+                </div>
+
+                <button type="submit" className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-400 hover:to-blue-500 text-white font-bold py-4 px-4 rounded-xl shadow-lg hover:shadow-teal-500/25 transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-4">
+                  {isLoginMode ? <><LogIn className="w-5 h-5"/> Sign In</> : <><UserPlus className="w-5 h-5"/> Create Account</>}
+                </button>
+              </form>
+              
+              <div className="mt-8 pt-6 border-t border-slate-800 text-center">
+                <p className="text-slate-400 text-sm">
+                  {isLoginMode ? "New to the platform? " : "Already have an account? "}
+                  <button onClick={() => setIsLoginMode(!isLoginMode)} className="text-teal-400 hover:text-teal-300 font-semibold transition-colors underline-offset-4 hover:underline">
+                    {isLoginMode ? 'Sign up here' : 'Log in here'}
+                  </button>
+                </p>
+              </div>
             </div>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-              <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required 
-                className="w-full bg-slate-950/50 border border-slate-700/50 rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-all" />
-            </div>
-            <button type="submit" className="w-full bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-400 hover:to-blue-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg hover:shadow-teal-500/25 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-              {isLoginMode ? <><LogIn className="w-5 h-5"/> Sign In</> : <><UserPlus className="w-5 h-5"/> Sign Up</>}
-            </button>
-          </form>
-          
-          <p className="mt-8 text-center text-slate-400 text-sm">
-            {isLoginMode ? "Don't have an account? " : "Already have an account? "}
-            <button onClick={() => setIsLoginMode(!isLoginMode)} className="text-teal-400 hover:text-teal-300 font-semibold transition-colors underline-offset-4 hover:underline">
-              {isLoginMode ? 'Sign up' : 'Log in'}
-            </button>
-          </p>
+            
+          </div>
         </div>
       </div>
     );
