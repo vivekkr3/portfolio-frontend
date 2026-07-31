@@ -23,7 +23,8 @@ export default function App() {
   
   const [isLoading, setIsLoading] = useState(true);
 
-  // Using the Render production URL. Ensure there are no brackets here!
+  // Set this to your live Render URL when deploying!
+  //const API_URL = 'http://localhost:5005';
   const API_URL = 'https://my-portfolio-backend-hydd.onrender.com';
 
   const handleAuth = async (e) => {
@@ -64,95 +65,28 @@ export default function App() {
 
   const fetchData = async () => {
     if (!token) return;
-    setIsLoading(true); 
     try {
       const [portfolioRes, historyRes] = await Promise.all([
         axios.get(`${API_URL}/api/portfolio`, getAuthHeaders()),
         axios.get(`${API_URL}/api/history`, getAuthHeaders())
       ]);
       
-      // Fallback in case the backend sends an HTML error page or empty response
       const rawAssets = Array.isArray(portfolioRes.data) ? portfolioRes.data : [];
       const rawHistory = Array.isArray(historyRes.data) ? historyRes.data : [];
 
-      // 1. Fetch USD to INR using a public CORS proxy
-      let usdToInrRate = 83.50;
-      try {
-        const fxUrl = encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/USDINR=X');
-        const fxRes = await axios.get(`https://api.allorigins.win/raw?url=${fxUrl}`);
-        if (fxRes.data?.chart?.result?.[0]?.meta?.regularMarketPrice) {
-          usdToInrRate = fxRes.data.chart.result[0].meta.regularMarketPrice;
-        }
-      } catch (e) {
-        console.warn("FX fetch failed, using fallback 83.50");
-      }
-
-      // 2. Fetch prices SEQUENTIALLY to prevent rate-limiting the proxy
-      const populatedAssets = [];
-      
-      for (const asset of rawAssets) {
-        try {
-          const assetUrl = encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${asset.ticker}`);
-          const res = await axios.get(`https://api.allorigins.win/raw?url=${assetUrl}`);
-          
-          const meta = res.data.chart.result[0].meta;
-          const livePrice = meta.regularMarketPrice;
-          const currency = meta.currency || 'INR';
-          
-          let priceInINR = currency === 'USD' ? livePrice * usdToInrRate : livePrice;
-          
-          // NEW: Convert the buy price to INR if the stock trades in USD!
-          let buyPriceInINR = currency === 'USD' ? (asset.buyPrice || 0) * usdToInrRate : (asset.buyPrice || 0);
-          
-          const currentValue = priceInINR * asset.shares;
-          const totalInvested = buyPriceInINR * asset.shares;
-          const pnl = currentValue - totalInvested;
-          const pnlPercent = totalInvested > 0 ? (pnl / totalInvested) * 100 : 0;
-
-          populatedAssets.push({
-            ...asset,
-            originalCurrency: currency,
-            originalPrice: livePrice,
-            value: currentValue,
-            totalInvested,      
-            pnl,                
-            pnlPercent          
-          });
-        } catch (err) {
-          console.error(`Browser block on ${asset.ticker}. Using mock data.`);
-          const mockPriceINR = 2500 + (Math.random() * 500); 
-          const currentValue = mockPriceINR * asset.shares;
-          const totalInvested = (asset.buyPrice || 0) * asset.shares;
-          const pnl = currentValue - totalInvested;
-          const pnlPercent = totalInvested > 0 ? (pnl / totalInvested) * 100 : 0;
-
-          populatedAssets.push({ 
-            ...asset, 
-            originalCurrency: 'INR (Mocked)', 
-            originalPrice: mockPriceINR, 
-            value: currentValue,
-            totalInvested,
-            pnl,
-            pnlPercent
-          });
-        }
-        
-        // Polite delay of 500ms before fetching the next ticker
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-      
-      setPortfolio(populatedAssets);
-      
       const formattedHistory = rawHistory.map(snap => ({
         ...snap,
         displayDate: new Date(snap.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
       }));
+      
       setHistory(formattedHistory);
+      setPortfolio(rawAssets);
+      
     } catch (error) {
       if (error.response?.status === 401 || error.response?.status === 403) handleLogout();
       toast.error('Failed to sync market data');
     } finally {
-      setIsLoading(false); 
+      setIsLoading(false);
     }
   };
 
@@ -197,8 +131,6 @@ export default function App() {
 
   const totalValue = portfolio.reduce((sum, asset) => sum + (asset.value || 0), 0);
 
-  // --- UI RENDERING ---
-
   if (!token) {
     return (
       <div className="relative min-h-screen bg-slate-950 flex items-center justify-center p-4 font-sans overflow-hidden">
@@ -210,9 +142,7 @@ export default function App() {
           <div className="absolute top-[60%] -right-[10%] w-[60%] h-[60%] rounded-full bg-blue-600/10 blur-[100px]"></div>
         </div>
 
-        {/* Glassmorphism Login Card */}
         <div className="relative z-10 bg-slate-900/60 backdrop-blur-2xl p-10 rounded-3xl shadow-[0_0_40px_rgba(0,0,0,0.5)] border border-slate-700/50 w-full max-w-md transition-all">
-          
           <div className="w-20 h-20 bg-gradient-to-br from-teal-400 to-blue-600 rounded-2xl mx-auto flex items-center justify-center mb-6 shadow-lg shadow-teal-500/20">
             <Wallet className="w-10 h-10 text-white" />
           </div>
@@ -262,7 +192,7 @@ export default function App() {
             <Wallet className="w-6 h-6 text-teal-400" />
           </div>
         </div>
-        <h2 className="text-xl font-semibold text-slate-300 animate-pulse tracking-wide">Syncing Market Data...</h2>
+        <h2 className="text-xl font-semibold text-slate-300 animate-pulse tracking-wide">Initializing Dashboard...</h2>
       </div>
     );
   }
@@ -273,7 +203,6 @@ export default function App() {
       
       <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* Navbar / Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-slate-900/50 p-6 rounded-3xl border border-slate-800 backdrop-blur-xl">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-gradient-to-br from-teal-400 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-teal-500/20">
@@ -281,7 +210,8 @@ export default function App() {
             </div>
             <div>
               <h1 className="text-sm font-semibold text-teal-500 uppercase tracking-wider mb-1">Live Dashboard</h1>
-              <h2 className="text-3xl md:text-4xl font-light text-slate-400">
+              
+              <h2 className="text-3xl md:text-4xl font-light text-slate-400 flex items-center gap-3">
                 Net Worth: <span className="text-white font-bold tracking-tight">₹{totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </h2>
             </div>
@@ -298,7 +228,7 @@ export default function App() {
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* Left Column (Forms & List) */}
+          {}
           <div className="lg:col-span-5 space-y-8">
             <div className="bg-slate-900/50 p-7 rounded-3xl border border-slate-800 hover:border-slate-700 transition-colors backdrop-blur-xl shadow-xl">
               <div className="flex items-center gap-3 mb-6">
@@ -343,9 +273,10 @@ export default function App() {
                       <div className="text-right flex items-center gap-3">
                         <div className="text-right">
                           <div className="text-teal-400 font-bold text-lg">₹{(asset.value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                          {(asset.buyPrice || 0) > 0 && (
+                          {/* CRASH-PROOF PNL BADGE (Guaranteed fallback to 0) */}
+                          {(asset.buyPrice || 0) > 0 && asset.pnl !== undefined && (
                             <div className={`text-xs font-semibold px-2 py-1 rounded-md mt-1 inline-block border ${asset.pnl >= 0 ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-                              {asset.pnl >= 0 ? '+' : ''}₹{asset.pnl.toLocaleString('en-IN', { maximumFractionDigits: 2 })} ({asset.pnl >= 0 ? '+' : ''}{asset.pnlPercent.toFixed(2)}%)
+                              {asset.pnl >= 0 ? '+' : ''}₹{(asset.pnl || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })} ({asset.pnl >= 0 ? '+' : ''}{(asset.pnlPercent || 0).toFixed(2)}%)
                             </div>
                           )}
                         </div>
@@ -360,7 +291,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right Column (Charts) */}
           <div className="lg:col-span-7 flex flex-col gap-8">
             <div className="bg-slate-900/50 p-7 rounded-3xl border border-slate-800 hover:border-slate-700 transition-colors backdrop-blur-xl shadow-xl flex flex-col h-[400px]">
               <div className="flex items-center gap-3 mb-6">
@@ -416,7 +346,7 @@ export default function App() {
         </div>
       </div>
       
-      {/* Custom Scrollbar styling injected globally for the list */}
+      {}
       <style dangerouslySetInnerHTML={{__html: `
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
